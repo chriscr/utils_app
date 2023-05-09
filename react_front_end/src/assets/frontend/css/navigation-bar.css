@@ -1,0 +1,67 @@
+.sticky-by-cr{
+	position: fixed;
+	left:0;
+	top:0;
+	right:0;	
+}
+/* on canvas */
+.nav-bar {
+	display: -webkit-flex;
+	display: -ms-flexbox;
+	display: flex;
+	-webkit-justify-content: space-between;
+	-ms-flex-pack: justify;
+	justify-content: space-between;
+	-webkit-align-items: center;
+	-ms-flex-align: center;
+	align-items: center;
+	background: transparent;
+	height: 70px;
+	margin-bottom: 0;
+	padding: 0;
+}
+.nav-bar-left{
+	width: 40%;
+}
+.nav-bar-center{
+	width: 0;
+}
+.nav-bar-right{
+	width: 60%;
+}
+
+@media only screen and (max-width:1024px) {
+	.nav-bar-left{
+		width: 25%;
+	}
+	.nav-bar-right{
+		width: 75%;
+	}
+}
+@media only screen and (max-width:780px) {
+}
+@media only screen and (max-width:720px) {
+}
+@media only screen and (max-width:680px) {
+}
+@media screen and (max-width: 63.9375em) {
+	.nav-bar-left{
+		width: 40%;
+	}
+	.nav-bar-right{
+		width: 60%;
+	}
+}
+@media screen and (max-width: 39.9375em) {
+	.nav-bar-left{
+		width: 80%;
+	}
+	.nav-bar-right{
+		width: 20%;
+	}
+	.nav-bar {
+		height: 50px;
+	}
+}
+@media only screen and (max-width:40em) {
+}

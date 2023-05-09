@@ -1,0 +1,22 @@
+/* 1px full border for app*/
+.b1-green{
+	border: 2px solid #78A22F;
+}
+.b1-dark-blue{
+	border: 2px solid #0E3151;
+}
+.bb1-dark-blue {
+    border-bottom: 1px solid #0E3151;
+}
+.bb2-dark-blue {
+    border-bottom: 2px solid #0E3151;
+}
+.b1-red {
+    border: 2px solid #F12E45;
+}
+.b1-dark-red {
+    border: 2px solid #C2272D;
+}
+.bb2-dark-red {
+    border-bottom: 2px solid #C2272D;
+}

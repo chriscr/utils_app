@@ -1,0 +1,10 @@
+.footer a{
+	letter-spacing: 1px;
+	color: #ccc;
+}
+.footer a:hover{
+	color: #409fff;
+	text-decoration: none;
+}
+@media only screen and (max-width:640px) {
+}
