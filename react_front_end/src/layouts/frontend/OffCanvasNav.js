@@ -2,6 +2,8 @@ import React, {useState, useEffect, useRef} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import { OffCanvas, OffCanvasMenu, OffCanvasBody } from "react-offcanvas";
 
+import AuthUtility from '../../components/frontend/auth/AuthUtility';
+
 import axios from 'axios';
 
 //import mobile_icon from '../../assets/frontend/images/mobile_icon_white_2.png';
@@ -75,49 +77,63 @@ const OffCanvasNav = () => {
 		event.preventDefault();
 		
 		axios.get('/api/logout').then(response =>{
-			if(response.data.status === 200){//success
+			if(response.data.status === 200){//HTTP_OK
+			
+				//user logged out on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
-				}
-				
-				//redirect to home page
-				navHistory('/');
-            }else if(response.data.status === 401){//user was not logged in
-
-				//user not authenticated on server so remove from local storage
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
                 	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
+				
+				//redirect to home page
+				navHistory('/');
+            }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
+
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
+				}
+				*/
                 	
 				navHistory('/login');
             }else{
 				console.log('Error 4**: api call failed');
             }
 		}).catch(function (error) {
-			console.log('[logoutSubmit - logout] error: ',error + ' back-end api call error');
-			
-			//user not authenticated on server so remove from local storage
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_role');
+			console.log('[logoutSubmit] error: ',error + ' back-end api call error');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
-            	localStorage.removeItem('auth_email');
-            	localStorage.removeItem('password');
-			}
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
+				}
+				*/
 	                	
 			navHistory('/login');
 		});
@@ -138,13 +154,14 @@ const OffCanvasNav = () => {
 		
 		HomeLinks = (
 			<ul className="menu-mobile-nav pt-5">
-				<li className={isHomeOpen ? 'submenu-active' : ''}><Link id="home" className="uppercase" onMouseDown={toggleMenuItem} onTouchEnd={toggleMenuItem}>Website</Link>
+				<li className={isHomeOpen ? 'submenu-active' : ''}><Link id="home" className="uppercase" onClick={toggleMenuItem} onTouchEnd={toggleMenuItem}>Website</Link>
 					<ul className="submenu-mobile-nav">
-						<li><Link to="/" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Home</Link></li>
-						<li><Link to="/about" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}About</Link></li>
-						<li><Link to="/contact" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Contact</Link></li>
-						<li><Link to="/help" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Help</Link></li>
-						<li><Link to="/technical_highlights" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Technical</Link></li>
+						<li><Link to="/" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Home</Link></li>
+						<li><Link to="/about" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}About</Link></li>
+						<li><Link to="/contact" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Contact</Link></li>
+						<li><Link to="/help" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Help</Link></li>
+						<li><Link to="/technical_highlights" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Technical</Link></li>
+						<li><Link to="/instructions" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Instructions</Link></li>
 					</ul>
 				</li>
 			</ul>
@@ -155,13 +172,15 @@ const OffCanvasNav = () => {
 			
 			UtilDashLinks = (
 				<ul className="menu-mobile-nav pt-5">
-					<li className={isUtilitiesOpen ? 'submenu-active' : ''}><Link id="utilities" className="uppercase" onMouseDown={toggleMenuItem} onTouchEnd={toggleMenuItem}>Utilities</Link>
+					<li className={isUtilitiesOpen ? 'submenu-active' : ''}><Link id="utilities" className="uppercase" onClick={toggleMenuItem} onTouchEnd={toggleMenuItem}>Utilities</Link>
 						<ul className="submenu-mobile-nav">
-							<li><Link to="/member/dashboard" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Dashboard</Link></li>
-							<li><Link to="/member/check_list" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Check List</Link></li>
-							<li><Link to="/member/portfolio" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Portfolio</Link></li>
-							<li><Link to="/member/traffic" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Traffic</Link></li>
-							<li><Link to="/member/weather" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Weather</Link></li>
+							<li><Link to="/member/dashboard" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Dashboard</Link></li>
+							<li><Link to="/member/check_list" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Check List</Link></li>
+							<li><Link to="/member/portfolio" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Portfolio</Link></li>
+							<li><Link to="/member/traffic" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Traffic</Link></li>
+							<li><Link to="/member/weather" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Weather</Link></li>
+							<li><Link to="/member/videos" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Videos</Link></li>
+							<li><Link to="/member/payemtns" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Payments</Link></li>
 						</ul>
 					</li>
 				</ul>
@@ -171,14 +190,14 @@ const OffCanvasNav = () => {
 			
 			UtilDashLinks = (
 				<ul className="menu-mobile-nav pt-5">
-					<li className={isUtilitiesOpen ? 'submenu-active' : ''}><Link id="utilities" className="uppercase" onMouseDown={toggleMenuItem} onTouchEnd={toggleMenuItem}>Utilities</Link>
+					<li className={isUtilitiesOpen ? 'submenu-active' : ''}><Link id="utilities" className="uppercase" onClick={toggleMenuItem} onTouchEnd={toggleMenuItem}>Utilities</Link>
 						<ul className="submenu-mobile-nav">
-							<li><Link to="/admin/dashboard" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Dashboard</Link></li>
-							<li><Link to="/admin/users" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Users</Link></li>
-							<li><Link to="/admin/check_list" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Check List</Link></li>
-							<li><Link to="/admin/portfolio" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Portfolio</Link></li>
-							<li><Link to="/admin/traffic" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Traffic</Link></li>
-							<li><Link to="/admin/weather" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Weather</Link></li>
+							<li><Link to="/admin/dashboard" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Dashboard</Link></li>
+							<li><Link to="/admin/users" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Users</Link></li>
+							<li><Link to="/admin/check_list" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Check List</Link></li>
+							<li><Link to="/admin/portfolio" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Portfolio</Link></li>
+							<li><Link to="/admin/traffic" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Traffic</Link></li>
+							<li><Link to="/admin/weather" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Weather</Link></li>
 						</ul>
 					</li>
 				</ul>
@@ -187,10 +206,10 @@ const OffCanvasNav = () => {
 		
 		RoleLinks = (
 			<ul className="menu-mobile-nav">
-				<li className={isUsersnameOpen ? 'submenu-active' : ''}><Link id="usersname" className="uppercase" onMouseDown={toggleMenuItem} onTouchEnd={toggleMenuItem}>{localStorage.getItem('auth_users_name')}</Link>
+				<li className={isUsersnameOpen ? 'submenu-active' : ''}><Link id="usersname" className="uppercase" onClick={toggleMenuItem} onTouchEnd={toggleMenuItem}>{localStorage.getItem('auth_users_name')}</Link>
 					<ul className="submenu-mobile-nav">
-						<li><Link to={RoleProfileLink} className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>{submenuLinkPadding}Profile</Link></li>
-						<li><Link to="#" className="uppercase" onMouseDown={logoutSubmit} onTouchEnd={logoutSubmit}>{submenuLinkPadding}Logout</Link></li>
+						<li><Link to={RoleProfileLink} className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >{submenuLinkPadding}Profile</Link></li>
+						<li><Link to="#" className="uppercase" onClick={logoutSubmit} onTouchEnd={logoutSubmit}>{submenuLinkPadding}Logout</Link></li>
 					</ul>
 				</li>
 			</ul>
@@ -198,13 +217,14 @@ const OffCanvasNav = () => {
 	}else{
         AuthButtons = (
 			<ul className="menu-mobile-nav">
-				<li><Link to="/login" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Login</Link></li>
-				<li><Link to="/register" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Register</Link></li>
-				<li><Link to="/" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Home</Link></li>
-				<li><Link to="/about" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>About</Link></li>
-				<li><Link to="/contact" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Contact</Link></li>
-				<li><Link to="/help" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Help</Link></li>
-				<li><Link to="/technical_highlights" className="uppercase" onMouseDown={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick}>Technical</Link></li>
+				<li><Link to="/login" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Login</Link></li>
+				<li><Link to="/register" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Register</Link></li>
+				<li><Link to="/" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Home</Link></li>
+				<li><Link to="/about" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >About</Link></li>
+				<li><Link to="/contact" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Contact</Link></li>
+				<li><Link to="/help" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Help</Link></li>
+				<li><Link to="/technical_highlights" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Technical</Link></li>
+				<li><Link to="/instructions" className="uppercase" onClick={handleMenuLinkItemClick} onTouchEnd={handleMenuLinkItemClick} >Instructions</Link></li>
 			</ul>
 		);
 	}

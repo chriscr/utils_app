@@ -1,11 +1,13 @@
 import React from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 
+import AuthUtility from '../../components/frontend/auth/AuthUtility';
+import OffCanvasNav from './OffCanvasNav';
+
 import axios from 'axios';
 
 import logo from '../../assets/frontend/images/logo.png';
 
-import OffCanvasNav from './OffCanvasNav';
 
 const OnCanvasHeader = () => {
 	
@@ -16,50 +18,63 @@ const OnCanvasHeader = () => {
 		event.preventDefault();
 		
 		axios.get('/api/logout').then(response =>{
-			if(response.data.status === 200){//success
+			if(response.data.status === 200){//HTTP_OK
 			
+				//user logged out on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
                 	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
 				
 				//redirect to home page
 				navHistory('/');
-            }else if(response.data.status === 401){//user was not logged in
+            }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
 
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
                 	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
                 	
 				navHistory('/login');
             }else{
 				console.log('Error 40X: api call failed');
             }
 		}).catch(function (error) {
-			console.log('[logoutSubmit - logout] error: ',error + ' back-end api call error');
+			console.log('[logoutSubmit] error: ',error + ' back-end api call error');
 			
 			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+			if(!isChecked){
             	localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
+            	localStorage.removeItem('remember_me');
 			}
+			*/
 	                	
 			navHistory('/login');
 		});
@@ -84,6 +99,8 @@ const OnCanvasHeader = () => {
 					<li className="util-dash"><Link to="/member/portfolio" className="font-raleway font-small font-weight-500 uppercase">Portfolio</Link></li>
 					<li className="util-dash"><Link to="/member/traffic" className="font-raleway font-small font-weight-500 uppercase">Traffic</Link></li>
 					<li className="util-dash"><Link to="/member/weather" className="font-raleway font-small font-weight-500 uppercase">Weather</Link></li>
+					<li className="util-dash"><Link to="/member/videos" className="font-raleway font-small font-weight-500 uppercase">Videos</Link></li>
+					<li className="util-dash"><Link to="/member/payments" className="font-raleway font-small font-weight-500 uppercase">Payments</Link></li>
 				</ul>
 			);
 		}else if(localStorage.getItem('auth_role') === 'admin'){
@@ -111,6 +128,7 @@ const OnCanvasHeader = () => {
 							<li className="home"><Link to="/contact" className="home font-raleway font-small font-weight-500 uppercase">Contact</Link></li>
 							<li className="home"><Link to="/help" className="home font-raleway font-small font-weight-500 uppercase">Help</Link></li>
 							<li className="home"><Link to="/technical_highlights" className="home font-raleway font-small font-weight-500 uppercase">Technical</Link></li>
+							<li className="home"><Link to="/instructions" className="home font-raleway font-small font-weight-500 uppercase">Instructions</Link></li>
 						</ul>
 					</li>
 					<li className="dropdown text-center">
@@ -141,6 +159,7 @@ const OnCanvasHeader = () => {
 							<li className="home"><Link to="/contact" className="home font-raleway font-small font-weight-500 uppercase">Contact</Link></li>
 							<li className="home"><Link to="/help" className="home font-raleway font-small font-weight-500 uppercase">Help</Link></li>
 							<li className="home"><Link to="/technical_highlights" className="home font-raleway font-small font-weight-500 uppercase">Technical</Link></li>
+							<li className="home"><Link to="/instructions" className="home font-raleway font-small font-weight-500 uppercase">Instructions</Link></li>
 						</ul>
 					</li>
 				</ul>

@@ -2,10 +2,10 @@ import React, {useState, useEffect, useRef} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import { OffCanvas, OffCanvasMenu, OffCanvasBody } from "react-offcanvas";
 
+import AuthUtility from '../frontend/auth/AuthUtility';
 import LoadingSpinner from '../frontend/LoadingSpinner';
 
 import DoneIcon from "@material-ui/icons/Done";
-
 import {Button} from "@material-ui/core";
 
 import $ from "jquery";
@@ -17,14 +17,14 @@ import plus_icon from '../../assets/frontend/images/plus_icon_white.png';
 import close_icon from '../../assets/frontend/images/close_icon_black.png';
 import delete_icon from '../../assets/frontend/images/delete_red_light.png';
 
-const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sends forecast data and boolean for opening/closing the location finder
+const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sends portfolio data and boolean for opening/closing the manager
 	
 	const navHistory = useNavigate();
 	
 	//check if clicked target is not within the offcanvasnav
 	const portfolioIconRef = useRef();
-	const portfoliioManagerRef = useRef();
-	const closePortfolioFinderRef = useRef();
+	const portfolioManagerRef = useRef();
+	const closePortfolioManagerRef = useRef();
 	
 	// using hooks
     const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +38,12 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 	});
 	const [portfolios, setPortfolios] = useState([]);
 	
-	//handles click outside slide out location finder
+	//handles click outside slide out
 	useEffect(() => {
 		const handleClickOutside = (event) => {
 			
 			// add event listener to close menu when clicked outside		
-			if (portfoliioManagerRef.current && !portfoliioManagerRef.current.contains(event.target)) {
+			if (portfolioManagerRef.current && !portfolioManagerRef.current.contains(event.target)) {
 				onPortfolioManagerOpen(false);
 				setIsPortfolioManagerOpen(false);
 			}
@@ -91,17 +91,21 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 					setNewPortfolio({...newPortfolio, name: '', info: ''});
 						
 	            }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-	            
+				
 					//user not authenticated on server so remove from local storage
+					AuthUtility.clearAuthData();
+					/*
 	                localStorage.removeItem('auth_token');
 	                localStorage.removeItem('auth_role');
 	
-					if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-		            	localStorage.removeItem('auth_users_name');
-	            		localStorage.removeItem('auth_users_last_name');
+					if(!isChecked){
+	                	localStorage.removeItem('auth_users_name');
+	                	localStorage.removeItem('auth_users_last_name');
 	                	localStorage.removeItem('auth_email');
 	                	localStorage.removeItem('password');
+	                	localStorage.removeItem('remember_me');
 					}
+					*/
 	                	
 					navHistory('/login');
 					
@@ -114,23 +118,25 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				setIsLoading(false);
 				
 			}).catch(function (error) {
-				console.log('[PortfolioManager - useEffect - read_locations] error: ',error + ' back-end api call error');
+				console.log('[PortfolioManager - useEffect] error: ',error + ' back-end api call error');
+				
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
+				}
+				*/
 			
 				setIsLoading(false);
-	            
-				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-	        		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-				}
-				
 				onPortfolioData(null);
-	                	
 				navHistory('/login');
 			});
 			
@@ -155,24 +161,40 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
         
 		setNewPortfolio({...newPortfolio, name: value, info: '',});
 
-		$('.location-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
+		$('.portfolio-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
     };
+    
+    const handleKeyDown = (event) => {
+		if (event.key === 'Enter') {
+			event.preventDefault(); // Prevent form submission
+			
+			if (event.target.name === 'newPortfolio') {
+		        const { name, value } = event.target;
+		        
+				setNewPortfolio({...newPortfolio, name: value, info: '',});
+		
+				$('.portfolio-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
+				
+				handleSaveNewPortfolio(event);
+			}
+		}
+	};
   
     // Function to handle save
     const handleSaveNewPortfolio = (event) => {
 		event.stopPropagation();
 		
 		if(newPortfolio.name){
-			savePortfolioFromDB(newPortfolio.name);
+			savePortfolio(newPortfolio.name);
 		}else{
 			setNewPortfolio({...newPortfolio, info: 'Error: Empty Portfolio Name'});
 			
-			$('.location-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
+			$('.portfolio-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
 			
 		}
     };
     
-	function savePortfolioFromDB(portfolio_name){
+	function savePortfolio(portfolio_name){
 		
 		setIsLoading(true);
 		setIsSaving(true);
@@ -200,27 +222,29 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				setNewPortfolio({...newPortfolio, name: '', info: ''});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
 				setNewPortfolio({...newPortfolio, info: 'Error: location does not exist.'});
 			
-				$('.location-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
+				$('.portfolio-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
 			
             }else{//more errors
             }
@@ -229,14 +253,27 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 			setIsSaving(false);
 	
 		}).catch(function (error) {
-			console.log('[savePortfolioFromDB2 - save_location] error: ',error + ' back-end api call error');
+			console.log('[savePortfolio] error: ',error + ' back-end api call error');
+				
+			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_role');
+
+			if(!isChecked){
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_email');
+            	localStorage.removeItem('password');
+            	localStorage.removeItem('remember_me');
+			}
+			*/
 		
 			setIsLoading(false);
 			setIsSaving(false);
-				
 			swal("Error",error,"error");
-	                	
-			navHistory('/weather');
+			navHistory('/portfolio');
 		});
 		
 	}
@@ -246,15 +283,16 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
         const list = [...portfolios];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			deletePortfolioFromDB(list[i]['random_id']);//send a specific unique ID to delete
+			deletePortfolio(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
     
-	function deletePortfolioFromDB(portfolio_random_id){
+	function deletePortfolio(portfolio_random_id){
 		
 		setIsLoading(true);
 		setIsDeleting(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(portfolio_random_id && portfolio_random_id !== ''){
@@ -262,8 +300,8 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				portfolio_random_id: portfolio_random_id,
 			} 
 		}
-	
-		axios.delete('/api/delete_portfolio', data, {
+		*/
+		axios.delete('/api/delete_portfolio/'+portfolio_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -277,26 +315,36 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 						onPortfolioManagerOpen(!isPortfolioManagerOpen);
 						setIsPortfolioManagerOpen(!isPortfolioManagerOpen);
 					}
+				}else{//update by filtering it out
+				    setPortfolios(oldPortfolios => {
+				      return oldPortfolios.filter(portfolio => portfolio.random_id !== portfolio_random_id)
+				    });
 				}
-				onPortfolioData(response.data.default_portfolio, response.data.default_portfolio_data);
+				
+				if(response.data.default_portfolio_data){
+					onPortfolioData(response.data.default_portfolio, response.data.default_portfolio_data);
+				}
+				
 				setNewPortfolio({...newPortfolio, name: '', info: ''});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
 	            localStorage.removeItem('auth_token');
 	            localStorage.removeItem('auth_role');
 	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
 	            	localStorage.removeItem('auth_users_name');
-					localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_users_last_name');
 	            	localStorage.removeItem('auth_email');
 	            	localStorage.removeItem('password');
 	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -308,14 +356,12 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 			setIsDeleting(false);
 	
 		}).catch(function (error) {
-			console.log('[deletePortfolioFromDB - delete_location] error: ',error + ' back-end api call error');
+			console.log('[deletePortfolio - delete_location] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
 			setIsDeleting(false);
-				
 			swal("Error",error,"error");
-	                	
-			navHistory('/weather');
+			navHistory('/portfolio');
 		});
 	}
 	
@@ -324,14 +370,15 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
         const list = [...portfolios];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			changeDefaultPortfolioInDB(list[i]['random_id']);//send a specific unique ID to delete
+			changeDefaultPortfolio(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
     
-	function changeDefaultPortfolioInDB(portfolio_random_id){
+	function changeDefaultPortfolio(portfolio_random_id){
 		
 		setIsLoading(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(portfolio_random_id && portfolio_random_id !== ''){
@@ -339,8 +386,9 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				default_portfolio_random_id: portfolio_random_id,
 			} 
 		}
+		*/
 	
-		axios.put('/api/change_default_portfolio', data, {
+		axios.put('/api/change_default_portfolio/'+portfolio_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -358,21 +406,23 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				setIsPortfolioManagerOpen(false);
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
 	            localStorage.removeItem('auth_token');
 	            localStorage.removeItem('auth_role');
 	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
 	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_users_last_name');
 	            	localStorage.removeItem('auth_email');
 	            	localStorage.removeItem('password');
 	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -383,13 +433,11 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 			setIsLoading(false);
 	
 		}).catch(function (error) {
-			console.log('[changeDefaultPortfolioInDB - change_default_location] error: ',error + ' back-end api call error');
+			console.log('[changeDefaultPortfolio] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
-			navHistory('/weather');
+			navHistory('/portfolio');
 		});
 	}
 	
@@ -403,17 +451,17 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 				</div>
 			</OffCanvasBody>
 			<OffCanvasMenu >
-				<div id="portfolio_manager" className="z-index-2100 bg-fafafa bl1-ccc pt-70l-110m-50s" style={{height:"2000px", overflow:"hidden"}} ref={portfoliioManagerRef}>
+				<div id="portfolio_manager" className="z-index-2100 bg-fafafa bl1-ccc pt-70l-110m-50s" style={{height:"2000px", overflow:"hidden"}} ref={portfolioManagerRef}>
 					<div className="clearfix p-10">
 						{isLoading && 
 						<span className="left"><LoadingSpinner paddingClass="none" /></span>
 						}
-						<Link to="#" className="button icon close-mobile-nav text-center right" onClick={togglePortfolioManager}  onTouchEnd={togglePortfolioManager} ref={closePortfolioFinderRef}>
+						<Link to="#" className="button icon close-mobile-nav text-center right" onClick={togglePortfolioManager}  onTouchEnd={togglePortfolioManager} ref={closePortfolioManagerRef}>
 							<img src={close_icon} className="" width="40" alt="add new city"/>
 						</Link>
 					</div>
 					<div className="clearfix bt1-ccc ptb-10 mlr-10">
-						<span className="left"><input type="text" className="medium" value={newPortfolio.name} name="newPortfolio" onChange={handleInputChange}  placeholder="My Portfolio" /></span>
+						<span className="left"><input type="text" className="medium" value={newPortfolio.name} name="newPortfolio" onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="My Portfolio" /></span>
 						<span className="right">
 						{isSaving ? (
 							<span className="button icon disabled">
@@ -426,7 +474,7 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 						)}
 						</span>
 					</div>
-					<div className="location-info text-left">{newPortfolio.info}</div>
+					<div className="portfolio-info text-left">{newPortfolio.info}</div>
 		
 					{portfolios.length > 0 ? ( 
 					<div className="ptb-5 bt1-ccc mlr-10">
@@ -466,7 +514,7 @@ const PortfolioManager = ({ onPortfolioData, onPortfolioManagerOpen }) => {//sen
 					}
 					
 					<div className="text-center bt1-ccc ptb-20 mlr-10">
-						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 SMART UTIL</div>
+						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 UTILS APP</div>
 						<div className="font-raleway font-small font-weight-400 txt-333 pt-10">Update: 02/07/2023</div>
 					</div>
 				</div>

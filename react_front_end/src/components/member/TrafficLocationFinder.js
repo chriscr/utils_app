@@ -2,6 +2,7 @@ import React, {useState, useEffect, useRef} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import { OffCanvas, OffCanvasMenu, OffCanvasBody } from "react-offcanvas";
 
+import AuthUtility from '../frontend/auth/AuthUtility';
 import LoadingSpinner from '../frontend/LoadingSpinner';
 
 import DoneIcon from "@material-ui/icons/Done";
@@ -84,23 +85,27 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 					if(response.data.locations){
 						setTrafficLocations(response.data.locations);
 					}
+					
 					onTrafficIncidentData(response.data.traffic_incident_data, response.data.locations);
 						
 	            }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-	            
+				
 					//user not authenticated on server so remove from local storage
+					AuthUtility.clearAuthData();
+					/*
 	                localStorage.removeItem('auth_token');
 	                localStorage.removeItem('auth_role');
 	
-					if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-		            	localStorage.removeItem('auth_users_name');
-	            		localStorage.removeItem('auth_users_last_name');
+					if(!isChecked){
+	                	localStorage.removeItem('auth_users_name');
+	                	localStorage.removeItem('auth_users_last_name');
 	                	localStorage.removeItem('auth_email');
 	                	localStorage.removeItem('password');
+	                	localStorage.removeItem('remember_me');
 					}
+					*/
             
 					swal("Warning",response.data.message,"warning");
-	                	
 					navHistory('/login');
 					
 	            }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -113,22 +118,24 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				
 			}).catch(function (error) {
 				console.log('[TrafficLocationFinder - useEffect - read_locations] error: ',error + ' back-end api call error');
+				
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
+				}
+				*/
 			
 				setIsLoading(false);
-	            
-				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-	        		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-				}
-				
 				onTrafficIncidentData([],[]);
-	                	
 				navHistory('/login');
 			});
 			
@@ -155,13 +162,29 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 
 		$('.location-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
     };
+    
+    const handleKeyDown = (event) => {
+		if (event.key === 'Enter') {
+			event.preventDefault(); // Prevent form submission
+			
+			if (event.target.name === 'newLocation') {
+		        const { name, value } = event.target;
+		        
+				setNewLocation({...newLocation, location: value, info: '',});
+		
+				$('.location-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
+				
+				handleSaveNewLocation(event);
+			}
+		}
+	};
   
     // Function to handle save
     const handleSaveNewLocation = (event) => {
 		event.stopPropagation();
 		
 		if(newLocation.location){
-			saveLocationFromDB(newLocation.location);
+			saveLocation(newLocation.location);
 		}else{
 			setNewLocation({...newLocation, info: 'Error: Empty Location'});
 			
@@ -169,7 +192,7 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 		}
     };
     
-	function saveLocationFromDB(location_name){
+	function saveLocation(location_name){
 		
 		setIsLoading(true);
 		setIsSaving(true);
@@ -198,21 +221,23 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				setNewLocation({...newLocation, location: '', info: '',});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -227,13 +252,26 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 			setIsSaving(false);
 	
 		}).catch(function (error) {
-			console.log('[saveLocationFromDB2 - save_location] error: ',error + ' back-end api call error');
+			console.log('[saveLocation] error: ',error + ' back-end api call error');
+				
+			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_role');
+
+			if(!isChecked){
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_email');
+            	localStorage.removeItem('password');
+            	localStorage.removeItem('remember_me');
+			}
+			*/
 		
 			setIsLoading(false);
 			setIsSaving(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/traffic');
 		});
 		
@@ -252,7 +290,8 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 		
 		setIsLoading(true);
 		setIsDeleting(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(location_random_id && location_random_id !== ''){
@@ -260,8 +299,9 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				location_random_id: location_random_id,
 			} 
 		}
+		*/
 	
-		axios.delete('/api/delete_traffic_location', data, {
+		axios.delete('/api/delete_traffic_location/'+location_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -280,21 +320,23 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				setNewLocation({...newLocation, location: '', info: '',});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-					localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
-            
+				*/
+					
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -306,13 +348,11 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 			setIsDeleting(false);
 	
 		}).catch(function (error) {
-			console.log('[deleteLocationFromDB - delete_location] error: ',error + ' back-end api call error');
+			console.log('[deleteLocationFromDB] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
 			setIsDeleting(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/traffic');
 		});
 	}
@@ -322,14 +362,15 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
         const list = [...trafficLocations];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			changeDefaultLocationInDB(list[i]['random_id']);//send a specific unique ID to delete
+			changeDefaultLocation(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
     
-	function changeDefaultLocationInDB(location_random_id){
+	function changeDefaultLocation(location_random_id){
 		
 		setIsLoading(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(location_random_id && location_random_id !== ''){
@@ -337,8 +378,9 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				default_location_random_id: location_random_id,
 			} 
 		}
+		*/
 	
-		axios.put('/api/change_default_traffic_location', data, {
+		axios.put('/api/change_default_traffic_location'+location_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -356,21 +398,23 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 				setIsLocationFinderOpen(false);
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -381,12 +425,10 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 			setIsLoading(false);
 	
 		}).catch(function (error) {
-			console.log('[changeDefaultLocationInDB - change_default_location] error: ',error + ' back-end api call error');
+			console.log('[changeDefaultLocation] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/traffic');
 		});
 	}
@@ -411,7 +453,7 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 						</Link>
 					</div>
 					<div className="clearfix bt1-ccc ptb-10 mlr-10">
-						<span className="left"><input type="text" className="medium" value={newLocation.location} name="newLocation" onChange={handleInputChange}  placeholder="San Francisco, CA" /></span>
+						<span className="left"><input type="text" className="medium" value={newLocation.location} name="newLocation" onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="San Francisco, CA" /></span>
 						<span className="right">
 						{isSaving ? (
 							<span className="button icon disabled">
@@ -464,7 +506,7 @@ const TrafficLocationFinder = ({ onTrafficIncidentData, onLocationFinderOpen }) 
 					}
 					
 					<div className="text-center bt1-ccc ptb-20 mlr-10">
-						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 SMART UTIL</div>
+						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 UTILS APP</div>
 						<div className="font-raleway font-small font-weight-400 txt-333 pt-10">Update: 02/07/2023</div>
 					</div>
 				</div>

@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useNavigate, useParams } from 'react-router-dom';
 
+import AuthUtility from './AuthUtility';
 import LoadingSpinner from '../LoadingSpinner';
 
 import axios from 'axios';
@@ -47,9 +48,7 @@ function ResetPassword(){
 			random_id: id,
 		}
 		
-		
-		// CSRF Protection through Laravel
-		axios.get('/sanctum/csrf-cookie').then(response1 => {
+		axios.get('/sanctum/csrf-cookie').then(response1 => {// CSRF Protection through Laravel
 			axios.put('/api/reset_password', data).then(response2 =>{
 				if(response2.data.status === 200){//HTTP_OK
 				
@@ -57,9 +56,7 @@ function ResetPassword(){
                 		localStorage.setItem('password', resetPasswordInput.password);
                 	}
 
-					//sweet alert on next page
                     swal("Success",response2.data.message + ' Please login.',"success");
-					
                     navHistory('/login');
 					
                 }else if(response2.data.status === 404){//HTTP_NOT_FOUND
@@ -81,44 +78,50 @@ function ResetPassword(){
 				setIsLoading(false);
 				
 			}).catch(function (error) {
-				console.log('[resetPasswordSubmit - reset_password] error: ',error + ' back-end api call error');
+				console.log('[resetPasswordSubmit] error: ',error + ' back-end api call error');
+		            
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+	            localStorage.removeItem('auth_token');
+	            localStorage.removeItem('auth_role');
+	
+				if(!isChecked){
+	            	localStorage.removeItem('auth_users_name');
+	            	localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_email');
+	            	localStorage.removeItem('password');
+	            	localStorage.removeItem('remember_me');
+				}
+				*/
 		
 				setIsLoading(false);
-				
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-            		localStorage.removeItem('auth_users_name');
-                	localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
-                	localStorage.removeItem('remember_me');
-				}
-	                	
+				swal("Error",error,"error");
 				navHistory('/reset_password/'+id+'/'+email);
 					
-				swal("Error",error,"error");
 			});
 		}).catch(function (error) {
-			console.log('[resetPasswordSubmit - reset_password] error: ',error + ' csrf-cookie is outdated');
-		
-			setIsLoading(false);
-				
+			console.log('[resetPasswordSubmit] error: ',error + ' csrf-cookie is outdated');
+		            
+			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+			if(!isChecked){
             	localStorage.removeItem('auth_users_name');
-               	localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
             	localStorage.removeItem('remember_me');
 			}
-	                	
+			*/
+		
+			setIsLoading(false);
+			swal("Error",error,"error");
 			navHistory('/reset_password/'+id+'/'+email);
 					
-			swal("Error",error,"error");
 		});
 	}
 	

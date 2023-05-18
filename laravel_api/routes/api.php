@@ -35,29 +35,29 @@ Route::put('save_password', [AuthController::class, 'save_password']);
 
 Route::post('contact', [MessagingController::class, 'contact']);
 
-Route::get('read_check_lists', [CheckListController::class, 'read_check_lists']);
-Route::post('save_check_list', [CheckListController::class, 'save_check_list']);
-Route::delete('delete_check_list', [CheckListController::class, 'delete_check_list']);
-Route::put('change_default_check_list', [CheckListController::class, 'change_default_check_list']);
-Route::post('save_check_list_items', [CheckListController::class, 'save_check_list_items']);
-Route::delete('delete_check_list_items', [CheckListController::class, 'delete_check_list_items']);
+Route::post('save_check_list', [CheckListController::class, 'save']);
+Route::get('read_check_lists', [CheckListController::class, 'read']);
+Route::delete('delete_check_list/{id}', [CheckListController::class, 'delete']);
+Route::put('change_default_check_list/{id}', [CheckListController::class, 'change_default']);
+Route::post('save_items', [CheckListController::class, 'save_items']);
+Route::delete('delete_item/{id}/{checkListId}', [CheckListController::class, 'delete_item']);
 
-Route::get('read_weather_locations', [WeatherController::class, 'read_weather_locations']);
-Route::post('save_weather_location', [WeatherController::class, 'save_weather_location']);
-Route::delete('delete_weather_location', [WeatherController::class, 'delete_weather_location']);
-Route::put('change_default_weather_location', [WeatherController::class, 'change_default_weather_location']);
+Route::post('save_portfolio', [PortfolioController::class, 'save']);
+Route::get('read_portfolios', [PortfolioController::class, 'read']);
+Route::delete('delete_portfolio/{id}', [PortfolioController::class, 'delete']);
+Route::put('change_default_portfolio/{id}', [PortfolioController::class, 'change_default']);
+Route::post('save_symbols', [PortfolioController::class, 'save_symbols']);
+Route::delete('delete_symbol/{id}/{symbolId}', [PortfolioController::class, 'delete_symbol']);
 
-Route::get('read_traffic_locations', [TrafficController::class, 'read_traffic_locations']);
-Route::post('save_traffic_location', [TrafficController::class, 'save_traffic_location']);
-Route::delete('delete_traffic_location', [TrafficController::class, 'delete_traffic_location']);
-Route::put('change_default_traffic_location', [TrafficController::class, 'change_default_traffic_location']);
+Route::post('save_traffic_location', [TrafficController::class, 'save']);
+Route::get('read_traffic_locations', [TrafficController::class, 'read']);
+Route::delete('delete_traffic_location/{id}', [TrafficController::class, 'delete']);
+Route::put('change_default_traffic_location/{id}', [TrafficController::class, 'change_default']);
 
-Route::get('read_portfolios', [PortfolioController::class, 'read_portfolios']);
-Route::post('save_portfolio', [PortfolioController::class, 'save_portfolio']);
-Route::delete('delete_portfolio', [PortfolioController::class, 'delete_portfolio']);
-Route::put('change_default_portfolio', [PortfolioController::class, 'change_default_portfolio']);
-Route::post('save_portfolio_symbols', [PortfolioController::class, 'save_portfolio_symbols']);
-Route::delete('delete_portfolio_symbols', [PortfolioController::class, 'delete_portfolio_symbols']);
+Route::post('save_weather_location', [WeatherController::class, 'save']);
+Route::get('read_weather_locations', [WeatherController::class, 'read']);
+Route::delete('delete_weather_location/{id}', [WeatherController::class, 'delete']);
+Route::put('change_default_weather_location/{id}', [WeatherController::class, 'change_default']);
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();

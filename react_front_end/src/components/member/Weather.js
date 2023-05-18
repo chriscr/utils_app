@@ -181,7 +181,7 @@ function Weather(){
 	return(
 		<div className="body-content z-index-0 bg-fff pt-70l-110m-50s pb-20l-10s">
 		
-			<div className="panel large  pt-20l-10s">
+			<div className="panel largeX ptb-20l-10s plr-20l-10s">
 			
 				<div className="grid-x">
 				

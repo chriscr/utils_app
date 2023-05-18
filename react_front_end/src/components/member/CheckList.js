@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 
 import CheckListManager from './CheckListManager';
-
+import AuthUtility from '../frontend/auth/AuthUtility';
 import LoadingSpinner from '../frontend/LoadingSpinner';
 
 import DoneIcon from "@material-ui/icons/Done";
@@ -16,7 +16,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
 
-import $ from "jquery";
+//import $ from "jquery";
 import axios from 'axios';
 import swal from 'sweetalert';
 
@@ -57,11 +57,9 @@ function CheckList(){
 
 	const handleCheckListManagerOpen = (isCheckListManagerOpen) => {
 		if(isCheckListManagerOpen){
-			$('#highchart').addClass('hide');
-			$('#forecast_data').addClass('hide');
+			//hide some elements
 		}else{
-			$('#highchart').removeClass('hide');
-			$('#forecast_data').removeClass('hide');
+			//show some elements
 		}
 	};
 
@@ -131,7 +129,6 @@ function CheckList(){
 
 	const handleCancel = () => {
         const list = [...checkListForCancel.data];
-        
 		const clonedList = JSON.parse(JSON.stringify(list));
 		
 		//set rows to the old cached rows
@@ -171,7 +168,7 @@ function CheckList(){
     // Function to handle save
     const handleSave = () => {
 
-		saveCheckListItemToDB();
+		saveCheckListItem();
 
         setAdd(!isAdd);
         setEdit(!isEdit);
@@ -181,7 +178,7 @@ function CheckList(){
 		setCheckListForCancel([]);
     };
 
-	function saveCheckListItemToDB(){
+	function saveCheckListItem(){
 		
 		setIsLoading(true);
 			
@@ -192,25 +189,25 @@ function CheckList(){
 			check_list_items_json_string: JSON.stringify(checkList.data),
 		}
 	
-		axios.post('/api/save_check_list_items', data, {
+		axios.post('/api/save_items', data, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
 		}).then(response =>{
 			
-			var default_check_list_data;
+			var check_list_data;
 			var error_message;
 			
 			if(response.data.status === 200){//HTTP_OK
 			
 				//update all state properties
-				default_check_list_data = response.data.default_check_list_data;
+				check_list_data = response.data.check_list_data;
 			
 				error_message = '';
-				for (let i = 0; i < default_check_list_data.length; i++) {
-					if (default_check_list_data[i].hasOwnProperty('error')) {
-						error_message = error_message + ' ' + default_check_list_data[i]['symbol']+' '+default_check_list_data[i]['error'];
-						default_check_list_data.splice(i, 1);
+				for (let i = 0; i < check_list_data.length; i++) {
+					if (check_list_data[i].hasOwnProperty('error')) {
+						error_message = error_message + ' ' + check_list_data[i]['symbol']+' '+check_list_data[i]['error'];
+						check_list_data.splice(i, 1);
 						i--;
 					}
 				}
@@ -222,33 +219,36 @@ function CheckList(){
 				}
 			
 				//update all state properties
-				setCheckList({...checkList, data: default_check_list_data});
+				setCheckList({...checkList, data: check_list_data});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-            
+				
 				//user not authenticated on server so remove from local storage
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
+				AuthUtility.clearAuthData();
+				/*
+	            localStorage.removeItem('auth_token');
+	            localStorage.removeItem('auth_role');
+	
+				if(!isChecked){
+	            	localStorage.removeItem('auth_users_name');
+	            	localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_email');
+	            	localStorage.removeItem('password');
+	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
-				default_check_list_data = response.data.default_check_list_data;
+				check_list_data = response.data.check_list_data;
 			
 				error_message = '';
-				for (let i = 0; i < default_check_list_data.length; i++) {
-					if (default_check_list_data[i].hasOwnProperty('error')) {
-						error_message = error_message + ' ' + default_check_list_data[i]['symbol']+' '+default_check_list_data[i]['error'];
-						default_check_list_data.splice(i, 1);
+				for (let i = 0; i < check_list_data.length; i++) {
+					if (check_list_data[i].hasOwnProperty('error')) {
+						error_message = error_message + ' ' + check_list_data[i]['symbol']+' '+check_list_data[i]['error'];
+						check_list_data.splice(i, 1);
 						i--;
 					}
 				}
@@ -256,8 +256,7 @@ function CheckList(){
 				if(error_message){
 			
 					//update all state properties
-					setCheckList({...checkList, data: default_check_list_data});
-					
+					setCheckList({...checkList, data: check_list_data});
                 	swal("Warning", error_message, "warning");
 				}else{
                 	swal("Warning", response.data.message, "warning");
@@ -268,12 +267,10 @@ function CheckList(){
 			setIsLoading(false);
 			
 		}).catch(function (error) {
-			console.log('[saveCheckListItemsToDB - save_check_list_items] error: ',error + ' back-end api call error');
+			console.log('[saveCheckListItem] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/check_list');
 		});
 	}
@@ -288,14 +285,14 @@ function CheckList(){
         const list = [...checkList.data];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			deleteCheckListItemsFromDB(list[i]['random_id']);//send a specific unique ID to delete
+			deleteCheckListItems(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
 
     const handleRemoveAllClick = () => {
 
 		// No unique ID to delete all
-		deleteCheckListItemsFromDB();
+		deleteCheckListItems();
         setShowConfirmAll(false);
     };
 
@@ -304,10 +301,11 @@ function CheckList(){
         setShowConfirmAll(false);
     };
 
-	function deleteCheckListItemsFromDB(check_list_item_random_id){
+	function deleteCheckListItems(check_list_item_random_id){
 		
 		setIsLoading(true);
-			
+		
+		/*
 		//values sent to api for an individual check list item delete
 		var data;
 		if(!check_list_item_random_id || check_list_item_random_id === ''){
@@ -320,32 +318,45 @@ function CheckList(){
 				check_list_item_random_id: check_list_item_random_id,
 			}
 		}
+		*/
+		if(!check_list_item_random_id || check_list_item_random_id === ''){
+			check_list_item_random_id = 'none';
+		}
 	
-		axios.delete('/api/delete_check_list_items', data, {
+		axios.delete('/api/delete_item/'+checkList.random_id+'/'+check_list_item_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
 		}).then(response =>{
 			if(response.data.status === 200){//HTTP_OK
 			
-				//update all state properties
-				setCheckList({...checkList, data: response.data.default_check_list_data});
+				var list = [];
+				
+				if(check_list_item_random_id && check_list_item_random_id !== 'none' && response.data.check_list_data){
+					list = response.data.check_list_data;
+				}
+			
+				//update state properties
+				setCheckList({...checkList, data: list});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-            
+				
 				//user not authenticated on server so remove from local storage
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
+				AuthUtility.clearAuthData();
+				/*
+	            localStorage.removeItem('auth_token');
+	            localStorage.removeItem('auth_role');
+	
+				if(!isChecked){
+	            	localStorage.removeItem('auth_users_name');
+	            	localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_email');
+	            	localStorage.removeItem('password');
+	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -356,12 +367,10 @@ function CheckList(){
 			setIsLoading(false);
 	
 		}).catch(function (error) {
-			console.log('[deleteCheckListItemsFromDB - delete_check_list_items] error: ',error + ' back-end api call error');
+			console.log('[deleteCheckListItems] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/check_list');
 		});
 	}
@@ -376,7 +385,7 @@ function CheckList(){
 				<Alert onClose={handleClose} severity="error">List Item deleted successfully!</Alert>
 			</Snackbar>
 			
-			<div className="panel large ptb-20l-10s">
+			<div className="panel largeX ptb-20l-10s plr-20l-10s">
 			
 				<div className="grid-x">
 				
@@ -474,8 +483,8 @@ function CheckList(){
 									{/*<td  key={'edit_td4'+data_item.id+data_item.random_id} className="font-source-sans font-standard font-weight-500 txt-333 text-center width-75px hide-for-small-only">{convertDateTimeToText(data_item.created_at)}</td>*/}
 									<td  key={'edit_td5'+data_item.id+data_item.random_id} className="font-source-sans font-standard font-weight-500 txt-333 text-center width-75px hide-for-small-only">{convertDateTimeToText(data_item.updated_at)}</td>
 									<td  key={'edit_td6'+data_item.random_id+data_item.random_id} className="text-center p-10 width-40px">
-					            	<Link onClick={() => handleRemoveClick(i)} onTouchEnd={() => handleRemoveClick(i)} className="hover-opacity-50">
-										<img src={delete_icon} className="" width="17" alt="delete check list"/>
+					            	<Link disabled className="hover-opacity-50 disabled">
+										<img src={delete_icon} className="grayscale" width="17" alt="delete check list"/>
 									</Link>
 									</td>
 								</tr>

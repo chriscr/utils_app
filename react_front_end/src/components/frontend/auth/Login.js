@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useNavigate} from 'react-router-dom';
 
+import AuthUtility from './AuthUtility';
 import LoadingSpinner from '../LoadingSpinner';
 
 import axios from 'axios';
@@ -52,7 +53,11 @@ function Login(){
 		axios.get('/sanctum/csrf-cookie').then(response1 => {// CSRF Protection through Laravel
 			axios.post('/api/login', data).then(response2 =>{
 				if(response2.data.status === 200){//HTTP_OK
-				
+					
+					AuthUtility.setAuthData(response2.data.auth_users_name, response2.data.auth_users_last_name, 
+					response2.data.auth_email, response2.data.auth_token, response2.data.auth_role,
+					loginInput.password, isChecked);
+					/*
                     localStorage.setItem('auth_users_name', response2.data.auth_users_name);
                     localStorage.setItem('auth_users_last_name', response2.data.auth_users_last_name);
                     localStorage.setItem('auth_email', response2.data.auth_email);
@@ -66,6 +71,7 @@ function Login(){
                     	localStorage.removeItem('password');
                     	localStorage.removeItem('remember_me');
 					}
+					*/
 					
 					//redirect to proper dashboard based on role
 					if(response2.data.auth_role === 'admin'){
@@ -94,10 +100,11 @@ function Login(){
 				setIsLoading(false);
 					
 			}).catch(function (error) {
-				console.log('[loginSubmit - login] error: ',error + ' back-end api call error');
-		
-				setIsLoading(false);
+				console.log('[loginSubmit] error: ',error + ' back-end api call error');
 				
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
@@ -108,35 +115,36 @@ function Login(){
                 	localStorage.removeItem('password');
                 	localStorage.removeItem('remember_me');
 				}
-	                	
-				navHistory('/login');
-					
-				//swal("Error",error,"error");
-		
+				*/
+				
 				setIsLoading(false);
+				//swal("Error",error,"error");
+				navHistory('/login');
 				
 			});
 		}).catch(function (error) {
 			//csrf-cookie is outdated
-			console.log('[loginSubmit - login] error: ',error + ' csrf-cookie is outdated');
+			console.log('[loginSubmit] error: ',error + ' csrf-cookie is outdated');
 			
 			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
 			if(!isChecked){
-                localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
             	localStorage.removeItem('remember_me');
 			}
+			*/
 	                	
+			setIsLoading(false);
+			//swal("Error",error,"error");
 			navHistory('/login');
 					
-			//swal("Error",error,"error");
-		
-			setIsLoading(false);
 		});
 	}
 

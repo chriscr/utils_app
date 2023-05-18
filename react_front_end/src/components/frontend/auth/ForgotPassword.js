@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useNavigate} from 'react-router-dom';
 
+import AuthUtility from './AuthUtility';
 import LoadingSpinner from '../LoadingSpinner';
 
 import axios from 'axios';
@@ -49,9 +50,7 @@ function ForgotPassword(){
 
                 	localStorage.removeItem('password');
                 	
-					//sweet alert on next page
                     swal("Success",response2.data.message,"success");
-					
                     navHistory('/login');
 					
                 }else if(response2.data.status === 404){//HTTP_NOT_FOUND
@@ -71,44 +70,49 @@ function ForgotPassword(){
 				setIsLoading(false);
 				
 			}).catch(function (error) {
-				console.log('[forgotPasswordSubmit - forgot_password] error: ',error + ' back-end api call error');
-		
-				setIsLoading(false);
-				
+				console.log('[forgotPasswordSubmit] error: ',error + ' back-end api call error');
+		            
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-            		localStorage.removeItem('auth_users_name');
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
                 	localStorage.removeItem('remember_me');
 				}
-	                	
+				*/
+		
+				setIsLoading(false);
+				swal("Error",error,"error");
 				navHistory('/forgot_password');
 					
-				swal("Error",error,"error");
 			});
 		}).catch(function (error) {
-			console.log('[forgotPasswordSubmit - forgot_password] error: ',error + ' csrf-cookie is outdated');
-		
-			setIsLoading(false);
-				
+			console.log('[forgotPasswordSubmit] error: ',error + ' csrf-cookie is outdated');
+		            
+			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+			if(!isChecked){
             	localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
             	localStorage.removeItem('remember_me');
 			}
-	                	
-			navHistory('/forgot_password');
-					
+			*/
+		
+			setIsLoading(false);
 			swal("Error",error,"error");
+			navHistory('/forgot_password');
 		});
 	}
 	

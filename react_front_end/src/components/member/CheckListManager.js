@@ -2,10 +2,10 @@ import React, {useState, useEffect, useRef} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import { OffCanvas, OffCanvasMenu, OffCanvasBody } from "react-offcanvas";
 
+import AuthUtility from '../frontend/auth/AuthUtility';
 import LoadingSpinner from '../frontend/LoadingSpinner';
 
 import DoneIcon from "@material-ui/icons/Done";
-
 import {Button} from "@material-ui/core";
 
 import $ from "jquery";
@@ -24,7 +24,7 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 	//check if clicked target is not within the offcanvasnav
 	const checkListIconRef = useRef();
 	const checkListManagerRef = useRef();
-	const closeCheckListFinderRef = useRef();
+	const closeCheckListManagerRef = useRef();
 	
 	// using hooks
     const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,7 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 	});
 	const [checkLists, setCheckLists] = useState([]);
 	
-	//handles click outside slide out location finder
+	//handles click outside slide out
 	useEffect(() => {
 		const handleClickOutside = (event) => {
 			
@@ -91,17 +91,21 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 					setNewCheckList({...newCheckList, name: '', info: ''});
 						
 	            }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-	            
+				
 					//user not authenticated on server so remove from local storage
+					AuthUtility.clearAuthData();
+					/*
 	                localStorage.removeItem('auth_token');
 	                localStorage.removeItem('auth_role');
 	
-					if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-		            	localStorage.removeItem('auth_users_name');
-	            		localStorage.removeItem('auth_users_last_name');
+					if(!isChecked){
+	                	localStorage.removeItem('auth_users_name');
+	                	localStorage.removeItem('auth_users_last_name');
 	                	localStorage.removeItem('auth_email');
 	                	localStorage.removeItem('password');
+	                	localStorage.removeItem('remember_me');
 					}
+					*/
 	                	
 					navHistory('/login');
 					
@@ -114,23 +118,25 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 				setIsLoading(false);
 				
 			}).catch(function (error) {
-				console.log('[CheckListManager - useEffect - read_locations] error: ',error + ' back-end api call error');
+				console.log('[CheckListManager - useEffect] error: ',error + ' back-end api call error');
+				
+				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
+				}
+				*/
 			
 				setIsLoading(false);
-	            
-				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-	        		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-				}
-				
 				onCheckListData(null);
-	                	
 				navHistory('/login');
 			});
 			
@@ -157,22 +163,38 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 
 		$('.location-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
     };
+    
+    const handleKeyDown = (event) => {
+		if (event.key === 'Enter') {
+			event.preventDefault(); // Prevent form submission
+			
+			if (event.target.name === 'newCheckList') {
+		        const { name, value } = event.target;
+		        
+				setNewCheckList({...newCheckList, name: value, info: '',});
+		
+				$('.checklist-info').removeClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10').addClass('font-source-sans font-small font-weight-400').html('');
+				
+				handleSaveNewCheckList(event);
+			}
+		}
+	};
   
     // Function to handle save
     const handleSaveNewCheckList = (event) => {
 		event.stopPropagation();
 		
 		if(newCheckList.name){
-			saveCheckListFromDB(newCheckList.name);
+			saveCheckList(newCheckList.name);
 		}else{
 			setNewCheckList({...newCheckList, info: 'Error: Empty Check List'});
 			
-			$('.location-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
+			$('.checklist-info').removeClass('font-source-sans font-small font-weight-400').addClass('font-source-sans font-standard font-weight-600 txt-red plr-10 pb-10');
 			
 		}
     };
     
-	function saveCheckListFromDB(check_list_name){
+	function saveCheckList(check_list_name){
 		
 		setIsLoading(true);
 		setIsSaving(true);
@@ -190,36 +212,33 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 			
 				//update all state properties
 				if(response.data.check_lists){
-					
 					setCheckLists(response.data.check_lists);
-					
 					if(response.data.check_lists.length === 1){
-						
 						onCheckListManagerOpen(!isCheckListManagerOpen);
 						setIsCheckListManagerOpen(!isCheckListManagerOpen);
-						
 						onCheckListData(response.data.default_check_list, response.data.default_check_list_data);
 					}
 				}
-				
 				setNewCheckList({...newCheckList, name: '', info: ''});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -234,13 +253,26 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 			setIsSaving(false);
 	
 		}).catch(function (error) {
-			console.log('[saveCheckListFromDB2 - save_location] error: ',error + ' back-end api call error');
+			console.log('[saveCheckList2 - save_location] error: ',error + ' back-end api call error');
+				
+			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_role');
+
+			if(!isChecked){
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
+            	localStorage.removeItem('auth_email');
+            	localStorage.removeItem('password');
+            	localStorage.removeItem('remember_me');
+			}
+			*/
 		
 			setIsLoading(false);
 			setIsSaving(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/weather');
 		});
 		
@@ -251,15 +283,16 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
         const list = [...checkLists];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			deleteCheckListFromDB(list[i]['random_id']);//send a specific unique ID to delete
+			deleteCheckList(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
     
-	function deleteCheckListFromDB(check_list_random_id){
+	function deleteCheckList(check_list_random_id){
 		
 		setIsLoading(true);
 		setIsDeleting(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(check_list_random_id && check_list_random_id !== ''){
@@ -267,8 +300,8 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 				check_list_random_id: check_list_random_id,
 			} 
 		}
-	
-		axios.delete('/api/delete_check_list', data, {
+		*/
+		axios.delete('/api/delete_check_list/'+check_list_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -277,34 +310,41 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 			
 				//update all state properties
 				if(response.data.check_lists){
-					
 					setCheckLists(response.data.check_lists);
-					
 					if(response.data.check_lists.length === 1){
 						onCheckListManagerOpen(!isCheckListManagerOpen);
 						setIsCheckListManagerOpen(!isCheckListManagerOpen);
 					}
+				}else{//update by filtering it out
+				    setCheckLists(oldCheckLists => {
+				      return oldCheckLists.filter(checkList => checkList.random_id !== check_list_random_id)
+				    });
 				}
 				
-				onCheckListData(response.data.default_check_list, response.data.default_check_list_data);
+				if(response.data.default_check_list_data){
+					onCheckListData(response.data.default_check_list, response.data.default_check_list_data);
+				}
+				
 				setNewCheckList({...newCheckList, name: '', info: ''});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
 	            localStorage.removeItem('auth_token');
 	            localStorage.removeItem('auth_role');
 	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
 	            	localStorage.removeItem('auth_users_name');
-					localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_users_last_name');
 	            	localStorage.removeItem('auth_email');
 	            	localStorage.removeItem('password');
 	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -316,13 +356,11 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 			setIsDeleting(false);
 	
 		}).catch(function (error) {
-			console.log('[deleteCheckListFromDB - delete_location] error: ',error + ' back-end api call error');
+			console.log('[deleteCheckList - delete_location] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
 			setIsDeleting(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/weather');
 		});
 	}
@@ -332,14 +370,15 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
         const list = [...checkLists];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			changeDefaultCheckListInDB(list[i]['random_id']);//send a specific unique ID to delete
+			changeDefaultCheckList(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
     
-	function changeDefaultCheckListInDB(check_list_random_id){
+	function changeDefaultCheckList(check_list_random_id){
 		
 		setIsLoading(true);
-			
+		
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(check_list_random_id && check_list_random_id !== ''){
@@ -347,8 +386,8 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 				default_check_list_random_id: check_list_random_id,
 			} 
 		}
-	
-		axios.put('/api/change_default_check_list', data, {
+		*/
+		axios.put('/api/change_default_check_list/'+check_list_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -359,29 +398,30 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 				if(response.data.check_lists){
 					setCheckLists(response.data.check_lists);
 				}
+				onCheckListData(response.data.default_check_list, response.data.default_check_list_data);
+				setNewCheckList({...newCheckList, name: '', info: ''});
 				
 				onCheckListManagerOpen(false);
 				setIsCheckListManagerOpen(false);
-				
-				onCheckListData(response.data.default_check_list, response.data.default_check_list_data);
-				setNewCheckList({...newCheckList, name: '', info: ''});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-		
+				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
 	            localStorage.removeItem('auth_token');
 	            localStorage.removeItem('auth_role');
 	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
 	            	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_users_last_name');
 	            	localStorage.removeItem('auth_email');
 	            	localStorage.removeItem('password');
 	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -392,12 +432,10 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 			setIsLoading(false);
 	
 		}).catch(function (error) {
-			console.log('[changeDefaultCheckListInDB - change_default_location] error: ',error + ' back-end api call error');
+			console.log('[changeDefaultCheckList] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/weather');
 		});
 	}
@@ -417,12 +455,12 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 						{isLoading && 
 						<span className="left"><LoadingSpinner paddingClass="none" /></span>
 						}
-						<Link to="#" className="button icon close-mobile-nav text-center right" onClick={toggleCheckListManager}  onTouchEnd={toggleCheckListManager} ref={closeCheckListFinderRef}>
+						<Link to="#" className="button icon close-mobile-nav text-center right" onClick={toggleCheckListManager}  onTouchEnd={toggleCheckListManager} ref={closeCheckListManagerRef}>
 							<img src={close_icon} className="" width="40" alt="add new city"/>
 						</Link>
 					</div>
 					<div className="clearfix bt1-ccc ptb-10 mlr-10">
-						<span className="left"><input type="text" className="medium" value={newCheckList.name} name="newCheckList" onChange={handleInputChange}  placeholder="My Shopping  List" /></span>
+						<span className="left"><input type="text" className="medium" value={newCheckList.name} name="newCheckList" onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="My Shopping  List" /></span>
 						<span className="right">
 						{isSaving ? (
 							<span className="button icon disabled">
@@ -435,7 +473,7 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 						)}
 						</span>
 					</div>
-					<div className="location-info text-left">{newCheckList.info}</div>
+					<div className="checklist-info text-left">{newCheckList.info}</div>
 		
 					{checkLists.length > 0 ? ( 
 					<div className="bt1-ccc ptb-5 mlr-10">
@@ -475,7 +513,7 @@ const CheckListManager = ({ onCheckListData, onCheckListManagerOpen }) => {//sen
 					}
 					
 					<div className="text-center bt1-ccc ptb-20 mlr-10">
-						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 SMART UTIL</div>
+						<div className="font-raleway font-standard font-weight-500 txt-333 uppercase">&copy;&nbsp;2023 UTILS APP</div>
 						<div className="font-raleway font-small font-weight-400 txt-333  pt-10">Update: 02/07/2023</div>
 					</div>
 				</div>

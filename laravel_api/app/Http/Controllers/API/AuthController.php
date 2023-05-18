@@ -119,8 +119,10 @@ class AuthController extends Controller{
                 'status'=>Response::HTTP_OK,
                 'status_message'=> Response::$statusMessages[Response::HTTP_OK],
                 'auth_users_name'=>$user->name,
+                'auth_users_last_name'=>trim($request->lastName),
                 'auth_email'=>$user->email,
                 'auth_token'=>$token,
+                'auth_role'=>$user->role,
                 'message'=>'Registration Successful! An account activation link has been sent to '.$user->email.'.',
             ];
         }
@@ -231,7 +233,7 @@ class AuthController extends Controller{
                 ];
                 
                 //email if on the server
-                if(url('') != 'http://localhost' && url('') != 'http://localhost:8000'){
+                if($user->email === 'john.smith@abc123xyz.com' && url('') != 'http://localhost' && url('') != 'http://localhost:8000'){
                     
                     //TODO: send message by email
                     $emailTemplate = new EmailTemplate;

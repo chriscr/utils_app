@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import {useNavigate, useParams} from 'react-router-dom';
 
+import AuthUtility from './AuthUtility';
 import LoadingSpinner from '../LoadingSpinner';
 
 import axios from 'axios';
@@ -35,12 +36,16 @@ function ActivateAccount(){
 				axios.put('/api/activate_account', data).then(response2 =>{
 					if(response2.data.status === 200){//HTTP_OK
 					
-						//update all state properties
+						AuthUtility.setAuthData(response2.data.auth_users_name, response2.data.auth_users_last_name, 
+						response2.data.auth_email, response2.data.auth_token, response2.data.auth_role,
+						null, null);
+						/*
 	                    localStorage.setItem('auth_users_name', response2.data.auth_users_name);
 	                    localStorage.setItem('auth_users_last_name', response2.data.auth_users_last_name);
 	                    localStorage.setItem('auth_email', response2.data.auth_email);
 	                    localStorage.setItem('auth_token', response2.data.auth_token);
 	                    localStorage.setItem('auth_role', response2.data.auth_role);
+	                    */
 						
 						if(localStorage.getItem('auth_role') === 'member'){
 							setNavPath('/member/dashboard');
@@ -52,19 +57,23 @@ function ActivateAccount(){
 							
 		            }else if(response2.data.status === 401 || response2.data.status === 404){//HTTP_UNAUTHORIZED OR HTTP_NOT_FOUND
 		            
-						//user not authenticated or not found on server so remove from local storage
+						//user not authenticated on server so remove from local storage
+						AuthUtility.clearAuthData();
+						/*
 		                localStorage.removeItem('auth_token');
 		                localStorage.removeItem('auth_role');
 		
-						if(!localStorage.getItem('remember_me')){
+						if(!isChecked){
 		                	localStorage.removeItem('auth_users_name');
-	                		localStorage.removeItem('auth_users_last_name');
+		                	localStorage.removeItem('auth_users_last_name');
 		                	localStorage.removeItem('auth_email');
 		                	localStorage.removeItem('password');
+		                	localStorage.removeItem('remember_me');
 						}
-	                
+						*/
+					
+						setIsLoading(false);
 						swal("Warning",response2.data.message + ' Can not activate account. Please click on the link in your email after registering.',"warning");
-		                	
 						navHistory('/login');
 	
 					}else{//more errors
@@ -77,32 +86,31 @@ function ActivateAccount(){
 					console.log('[useEffect - activate_account] error: ',error + ' back-end api call error');
 					
 					setIsLoading(false);
-						
 					swal("Error",error,"error");
-			                	
 					navHistory('/activate_account/'+id);
 				
 				});
 			}).catch(function (error) {
 				//csrf-cookie is outdated
 				console.log('[useEffect - activate_account] error: ',error + ' csrf-cookie is outdated');
-			
-				setIsLoading(false);
-				
+		            
 				//user not authenticated on server so remove from local storage
-	            localStorage.removeItem('auth_token');
-	            localStorage.removeItem('auth_role');
-	
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-	            	localStorage.removeItem('auth_users_name');
-	                localStorage.removeItem('auth_users_last_name');
-	            	localStorage.removeItem('auth_email');
-	            	localStorage.removeItem('password');
-	            	localStorage.removeItem('remember_me');
+				AuthUtility.clearAuthData();
+				/*
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_role');
+
+				if(!isChecked){
+                	localStorage.removeItem('auth_users_name');
+                	localStorage.removeItem('auth_users_last_name');
+                	localStorage.removeItem('auth_email');
+                	localStorage.removeItem('password');
+                	localStorage.removeItem('remember_me');
 				}
+				*/
 					
+				setIsLoading(false);
 				swal("Error",error,"error");
-		                	
 				navHistory('/login');
 			});
 			

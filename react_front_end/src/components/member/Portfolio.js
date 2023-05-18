@@ -1,8 +1,8 @@
-import React, {useState, useRef} from 'react';
+import React, {useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 
 import PortfolioManager from './PortfolioManager';
-
+import AuthUtility from '../frontend/auth/AuthUtility';
 import LoadingSpinner from '../frontend/LoadingSpinner';
 
 import Alert from "@material-ui/lab/Alert";
@@ -14,7 +14,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
 
-import $ from "jquery";
+//import $ from "jquery";
 import axios from 'axios';
 import swal from 'sweetalert';
 
@@ -29,8 +29,6 @@ import arrow_right_90 from '../../assets/frontend/images/arrow_right_90.png';
 function Portfolio(){
 	
 	const navHistory = useNavigate();
-	
-	const chartRef = useRef();
 	
 	// using hooks
     const [isLoading, setIsLoading] = useState(true);
@@ -56,16 +54,11 @@ function Portfolio(){
     const [showConfirm, setShowConfirm] = useState(false);
 	*/
 
-	const handlePortfolioManagerOpen = (isPortfolioOpen) => {
-		if(isPortfolioOpen){
-			$('#highchart').addClass('hide');
-			$('#forecast_data').addClass('hide');
+	const handlePortfolioManagerOpen = (isPortfolioManagerOpen) => {
+		if(isPortfolioManagerOpen){
+			//hide some elements
 		}else{
-			$('#highchart').removeClass('hide');
-			$('#forecast_data').removeClass('hide');
-			
-		    if (chartRef.current) {
-		    }
+			//show some elements
 		}
 	};
 	
@@ -116,9 +109,9 @@ function Portfolio(){
 				
 				const promise = axios.get('https://www.alphavantage.co/query', {
 					params: {
-					function: 'GLOBAL_QUOTE',
-					symbol: symbol_obj.symbol.toUpperCase(),
-					apikey: 'YN3NA1LG2J91KYH0'
+						function: 'GLOBAL_QUOTE',
+						symbol: symbol_obj.symbol.toUpperCase(),
+						apikey: 'YN3NA1LG2J91KYH0'
 					},
 					withCredentials: false, // Disable credentials mode
 					headers: {
@@ -217,7 +210,7 @@ function Portfolio(){
     const handleSave = () => {
 		setPortfolio({...portfolio, data: portfolio.data});
 
-		savePortfolioSymbolToDB();
+		savePortfolioSymbol();
 
         setAdd(!isAdd);
         setEdit(!isEdit);
@@ -227,7 +220,7 @@ function Portfolio(){
 		setPortfolioForCancel([]);
     };
 
-	function savePortfolioSymbolToDB(){
+	function savePortfolioSymbol(){
 		
 		setIsLoading(true);
 			
@@ -238,23 +231,23 @@ function Portfolio(){
 			portfolio_symbols_json_string: JSON.stringify(portfolio.data),
 		}
 	
-		axios.post('/api/save_portfolio_symbols', data, {
+		axios.post('/api/save_symbols', data, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
 		}).then(response =>{
 			
-			var default_portfolio_data;
+			var portfolio_data;
 			var error_message;
 			
 			if(response.data.status === 200){//HTTP_OK
-				default_portfolio_data = response.data.default_portfolio_data;
+				portfolio_data = response.data.portfolio_data;
 			
 				error_message = '';
-				for (let i = 0; i < default_portfolio_data.length; i++) {
-					if (default_portfolio_data[i].hasOwnProperty('error')) {
-						error_message = error_message + ' ' + default_portfolio_data[i]['symbol']+' '+default_portfolio_data[i]['error'];
-						default_portfolio_data.splice(i, 1);
+				for (let i = 0; i < portfolio_data.length; i++) {
+					if (portfolio_data[i].hasOwnProperty('error')) {
+						error_message = error_message + ' ' + portfolio_data[i]['symbol']+' '+portfolio_data[i]['error'];
+						portfolio_data.splice(i, 1);
 						i--;
 					}
 				}
@@ -266,33 +259,36 @@ function Portfolio(){
 				}
 			
 				//update all state properties
-				setPortfolio({...portfolio, data: default_portfolio_data});
+				setPortfolio({...portfolio, data: portfolio_data});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-            
+				
 				//user not authenticated on server so remove from local storage
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
+				AuthUtility.clearAuthData();
+				/*
+	            localStorage.removeItem('auth_token');
+	            localStorage.removeItem('auth_role');
+	
+				if(!isChecked){
+	            	localStorage.removeItem('auth_users_name');
+	            	localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_email');
+	            	localStorage.removeItem('password');
+	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
-				default_portfolio_data = response.data.default_portfolio_data;
+				portfolio_data = response.data.portfolio_data;
 				
 				error_message = '';
-				for (let i = 0; i < default_portfolio_data.length; i++) {
-					if (default_portfolio_data[i].hasOwnProperty('error')) {
-						error_message = error_message + ' ' + default_portfolio_data[i]['symbol']+' '+default_portfolio_data[i]['error'];
-						default_portfolio_data.splice(i, 1);
+				for (let i = 0; i < portfolio_data.length; i++) {
+					if (portfolio_data[i].hasOwnProperty('error')) {
+						error_message = error_message + ' ' + portfolio_data[i]['symbol']+' '+portfolio_data[i]['error'];
+						portfolio_data.splice(i, 1);
 						i--;
 					}
 				}
@@ -300,8 +296,7 @@ function Portfolio(){
 				if(error_message){
 			
 					//update state properties
-					setPortfolio({...portfolio, data: default_portfolio_data});
-					
+					setPortfolio({...portfolio, data: portfolio_data});
                 	swal("Warning", error_message, "warning");
 				}else{
                 	swal("Warning", response.data.message, "warning");
@@ -312,13 +307,11 @@ function Portfolio(){
 			setIsLoading(false);
 			
 		}).catch(function (error) {
-			console.log('[saveCheckListItemsToDB - save_check_list_items] error: ',error + ' back-end api call error');
+			console.log('[savePortfolioSymbol] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
-			navHistory('/check_list');
+			navHistory('/portfolio');
 		});
 	}
 	
@@ -332,14 +325,14 @@ function Portfolio(){
         const list = [...portfolio.data];
 
 		if(list[i]['random_id'] && list[i]['random_id'] !== ''){
-			deletePortfolioSymbolFromDB(list[i]['random_id']);//send a specific unique ID to delete
+			deletePortfolioSymbol(list[i]['random_id']);//send a specific unique ID to delete
 		}
     };
 
     const handleRemoveAllClick = () => {
 
 		// No unique ID to delete all
-		deletePortfolioSymbolFromDB();
+		deletePortfolioSymbol();
         setShowConfirmAll(false);
     };
 
@@ -348,10 +341,11 @@ function Portfolio(){
         setShowConfirmAll(false);
     };
 
-	function deletePortfolioSymbolFromDB(portfolio_symbol_random_id){
+	function deletePortfolioSymbol(portfolio_symbol_random_id){
 		
 		setIsLoading(true);
-			
+
+		/*
 		//values sent to api for an individual list item delete
 		var data;
 		if(!portfolio_symbol_random_id || portfolio_symbol_random_id === ''){
@@ -364,8 +358,12 @@ function Portfolio(){
 			portfolio_symbol_random_id: portfolio_symbol_random_id,
 			}
 		}
-	
-		axios.delete('/api/delete_portfolio_symbols', data, {
+		*/
+		if(!portfolio_symbol_random_id || portfolio_symbol_random_id === ''){
+			portfolio_symbol_random_id = 'none';
+		}
+			
+		axios.delete('/api/delete_symbol/'+portfolio.random_id+'/'+portfolio_symbol_random_id, {
 			headers: {
 				'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
 			}
@@ -374,7 +372,7 @@ function Portfolio(){
 			
 				var list = [];
 				
-				if(portfolio_symbol_random_id && portfolio_symbol_random_id !== ''){
+				if(portfolio_symbol_random_id && portfolio_symbol_random_id !== 'none'){
 				
 			        list = [...portfolio.data];
 			        
@@ -390,20 +388,23 @@ function Portfolio(){
 				setPortfolio({...portfolio, data: list});
 					
             }else if(response.data.status === 401){//HTTP_UNAUTHORIZED
-            
+				
 				//user not authenticated on server so remove from local storage
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_role');
-
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                	localStorage.removeItem('auth_users_name');
-            		localStorage.removeItem('auth_users_last_name');
-                	localStorage.removeItem('auth_email');
-                	localStorage.removeItem('password');
+				AuthUtility.clearAuthData();
+				/*
+	            localStorage.removeItem('auth_token');
+	            localStorage.removeItem('auth_role');
+	
+				if(!isChecked){
+	            	localStorage.removeItem('auth_users_name');
+	            	localStorage.removeItem('auth_users_last_name');
+	            	localStorage.removeItem('auth_email');
+	            	localStorage.removeItem('password');
+	            	localStorage.removeItem('remember_me');
 				}
+				*/
             
 				swal("Warning",response.data.message,"warning");
-                	
 				navHistory('/login');
 				
             }else if(response.data.status === 422){//HTTP_UNPROCESSABLE_ENTITY
@@ -414,12 +415,10 @@ function Portfolio(){
 			setIsLoading(false);
 	
 		}).catch(function (error) {
-			console.log('[deletePortfolioSymbolFromDB - delete_portfolio_symbol] error: ',error + ' back-end api call error');
+			console.log('[deletePortfolioSymbol] error: ',error + ' back-end api call error');
 		
 			setIsLoading(false);
-				
 			swal("Error",error,"error");
-	                	
 			navHistory('/stock_market');
 		});
 	}
@@ -434,7 +433,7 @@ function Portfolio(){
 				<Alert onClose={handleClose} severity="error">Symbol Deleted Successfully!</Alert>
 			</Snackbar>
 		
-			<div className="panel large pt-20l-10s">
+			<div className="panel largeX ptb-20l-10s plr-20l-10s">
 			
 				<div className="grid-x">
 				
@@ -494,7 +493,7 @@ function Portfolio(){
 				                {showConfirmAll && (
 									<Dialog open={showConfirmAll} onClose={handleNoAll} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
 										<DialogTitle id="alert-dialog-title" style={{padding:"0px",paddingTop:"20px", }}><DialogContentText style={{fontFamily:"Raleway",fontSize:20,fontWeight:800,color:"#0E1F2F", fontStyle:"italic",letterSpacing:1,textDecoration:"underline",textTransform:"uppercase"}}>Confirm Delete All</DialogContentText></DialogTitle>
-										<DialogContent><DialogContentText id="alert-dialog-description" style={{fontFamily:'Raleway',fontSize:14,fontWeight:500,color:"#0E1F2F"}}>Are you sure to delete all items on the check list</DialogContentText></DialogContent>
+										<DialogContent><DialogContentText id="alert-dialog-description" style={{fontFamily:'Raleway',fontSize:14,fontWeight:500,color:"#0E1F2F"}}>Are you sure you want to delete all symbols from the portfolio?</DialogContentText></DialogContent>
 										<DialogActions>
 											<Button onClick={handleRemoveAllClick} autoFocus style={{fontFamily:"Raleway",fontSize:12, padding:7}} className="button tiny">Yes</Button>
 											<Button onClick={handleNoAll} autoFocus style={{fontFamily:"Raleway",fontSize:12, padding:7}} className="button tiny">No</Button>

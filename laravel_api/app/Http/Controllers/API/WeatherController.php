@@ -11,14 +11,14 @@ use App\Libraries\GlobalData;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-//use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;
 
 use Exception;
 use Exception as BaseException;
 
 class WeatherController extends Controller{
     
-    public function save_weather_location(Request $request){
+    public function save(Request $request){
         
         $json_data = [];
         
@@ -151,7 +151,7 @@ class WeatherController extends Controller{
         return response()->json($json_data);
     }//end save weather location
     
-    public function read_weather_locations(Request $request){
+    public function read(Request $request){
         
         $json_data = [];
         
@@ -209,51 +209,68 @@ class WeatherController extends Controller{
         return response()->json($json_data);
     }//end read weather locations
     
+    /*
     public function delete_weather_location(Request $request){
         
         $json_data = [];
         
         if (Auth::check()) {
             
+            Log::debug('request: '.$request);
+            
             $location_random_id = null;
             $delete_result = null;
             if($request->location_random_id){
                 $location_random_id = $request->location_random_id;
+                */
+    public function delete($location_random_id){
+        
+        $json_data = [];
+        
+        if (Auth::check()) {
+            
+            Log::debug('location_random_id: '.$location_random_id);
+            
+            $weather_location_to_delete = null;
+            $delete_result = null;
+            if($location_random_id){
+                $weather_location_to_delete = Location::where('random_id', $location_random_id)->get()->first();
+                Log::debug('weather_location_to_delete random_id: '.$weather_location_to_delete->random_id);
                 $delete_result = Location::where('random_id', $location_random_id)->delete();
             }
             
-            $weather_locations = Location::where('user_id', Auth::id())->where('component', 'weather')->orderBy('order', 'asc')->get();
-            
-            $location_name = null;
-            foreach($weather_locations as $location){
-                if($location->default){
-                    $location_name = $location->name;
-                    break;
-                }
-            }
-            
-            if(sizeof($weather_locations) == 1){
-                foreach($weather_locations as $location){
-                    $location->default = true;
-                    $location->save();
-                    $location_name = $location->name;
-                }
-            }
-            
+            $weather_locations = null;
             $weather_forecast_data = null;
-            if($location_name){
-                
-                $weatherAPI = new WeatherAPI;
-                $weather_forecast_data = $weatherAPI->getWeatherForecastData($location_name, 3);
-                
-                if(property_exists($weather_forecast_data,'current')){
-                    $weather_forecast_data = $this->convert_formats($weather_forecast_data);
-                }else{
-                    $weather_forecast_data = null;
-                }
-            }
-           
+            
             if($delete_result > 0){
+                
+                //find new default if default was deleted
+                if($weather_location_to_delete->default == true){
+                    
+                    $location_name = null;
+                    $location_forecast_days = null;
+                    
+                    $weather_locations = Location::where('user_id', Auth::id())->where('component', 'weather')->orderBy('order', 'asc')->get();
+                    
+                    if(sizeof($weather_locations) > 0){
+                        foreach($weather_locations as $location){
+                            $location->default = true;
+                            $location->save();
+                            $location_name = $location->name;
+                            $location_forecast_days = 3;
+                            break;
+                        }
+                        
+                        if($location_name){
+                            $weatherAPI = new WeatherAPI;
+                            $weather_forecast_data = $weatherAPI->getWeatherForecastData($location_name, $location_forecast_days);
+                            
+                            if(property_exists($weather_forecast_data,'current')){
+                                $weather_forecast_data = $this->convert_formats($weather_forecast_data);
+                            }
+                        }
+                    }
+                }
                 
                 $json_data = [
                     'status'=>Response::HTTP_OK,
@@ -284,58 +301,44 @@ class WeatherController extends Controller{
         return response()->json($json_data);
     }//end delete weather location
     
-    public function change_default_weather_location(Request $request){
+    public function change_default($location_random_id){
         
         $json_data = [];
         
         if (Auth::check()) {
             
-            $default_location_random_id = null;
-            if($request->default_location_random_id){
-                $default_location_random_id = $request->default_location_random_id;
-            }
-            
             $weather_locations = Location::where('user_id', Auth::id())->where('component', 'weather')->orderBy('order', 'asc')->get();
             
             $default_location_name = null;
-            $change_default_location_result = false;
+            $default_location_forecast_days = null;
+            $weather_forecast_data = null;
+            
             foreach($weather_locations as $location){
-                if($location->random_id == $default_location_random_id){
+                if($location->random_id == $location_random_id){
                     $location->default = true;
-                    $location->save();
-                    
                     $default_location_name = $location->name;
-                    $change_default_location_result = true;
-                    break;
+                    $default_location_forecast_days = 3;
+                }else{
+                    $location->default = false;
                 }
+                $location->save();
             }
             
-            if($change_default_location_result){
-                //update all other locations if we updated a new default location
-                foreach($weather_locations as $location){
-                    if($location->random_id != $default_location_random_id){
-                        $location->default = false;
-                        $location->save();
-                    }
-                }
+            if($default_location_name){
                 
-                $weather_forecast_data = null;
-                if($default_location_name){
-                    
-                    $weatherAPI = new WeatherAPI;
-                    $weather_forecast_data = $weatherAPI->getWeatherForecastData($default_location_name, 3);
-                    
-                    if(property_exists($weather_forecast_data,'current')){
-                        $weather_forecast_data = $this->convert_formats($weather_forecast_data);
-                    }
-                }
+                $weatherAPI = new WeatherAPI;
+                $weather_forecast_data = $weatherAPI->getWeatherForecastData($default_location_name, $default_location_forecast_days);
                 
+                if(property_exists($weather_forecast_data,'current')){
+                    $weather_forecast_data = $this->convert_formats($weather_forecast_data);
+                }
+            
                 $json_data = [
                     'status'=>Response::HTTP_OK,
                     'status_message'=> Response::$statusMessages[Response::HTTP_OK],
                     'message' => 'Changed default location',
                     'locations' => $weather_locations,
-                    'default_location_random_id' => $default_location_random_id,
+                    'default_location_random_id' => $location_random_id,
                     'weather_forecast_data' => $weather_forecast_data
                 ];
             }else{
@@ -344,7 +347,7 @@ class WeatherController extends Controller{
                     'status_message'=> Response::$statusMessages[Response::HTTP_UNPROCESSABLE_ENTITY],
                     'message' => 'Could not change default location',
                     'locations' => $weather_locations,
-                    'default_location_random_id' => $default_location_random_id,
+                    'default_location_random_id' => $location_random_id,
                     'weather_forecast_data' => $weather_forecast_data
                 ];
             }

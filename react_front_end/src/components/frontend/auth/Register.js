@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useNavigate} from 'react-router-dom';
 
+import AuthUtility from './AuthUtility';
 import LoadingSpinner from '../LoadingSpinner';
 
 import axios from 'axios';
@@ -56,8 +57,10 @@ function Register(){
 		axios.get('/sanctum/csrf-cookie').then(response1 => {// CSRF Protection through Laravel
 			axios.post('/api/register', data).then(response2 =>{
 				if(response2.data.status === 200){//HTTP_OK
-					localStorage.setItem('auth_users_name', response2.data.auth_users_name);
-					localStorage.setItem('auth_email', response2.data.auth_email);
+					
+					AuthUtility.setAuthData(response2.data.auth_users_name, response2.data.auth_users_last_name, 
+					response2.data.auth_email, response2.data.auth_token, response2.data.auth_role,
+					null, null);
 
 					//sweet alert on next page
 					swal("Success",response2.data.message,"success");
@@ -79,45 +82,49 @@ function Register(){
 				setIsLoading(false);
 				
 			}).catch(function (error) {
-				console.log('[registerSubmit - register] error: ',error + ' back-end api call error');
-			
+				console.log('[registerSubmit] error: ',error + ' back-end api call error');
+				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
                 	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
                 	localStorage.removeItem('remember_me');
 				}
-	                	
-				navHistory('/register');
-					
+				*/
+		
+				setIsLoading(false);
 				swal("Error",error,"error");
+				navHistory('/register');
 			});
 		}).catch(function (error) {
 			//csrf-cookie is outdated
-			console.log('[registerSubmit - register] error: ',error + ' csrf-cookie is outdated');
-		
-			setIsLoading(false);
-			
+			console.log('[registerSubmit] error: ',error + ' csrf-cookie is outdated');
+				
 			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
+			if(!isChecked){
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
             	localStorage.removeItem('remember_me');
 			}
+			*/
 		
-			navHistory('/register');
-					
+			setIsLoading(false);
 			swal("Error",error,"error");
+			navHistory('/register');
 		});
 	}
 	

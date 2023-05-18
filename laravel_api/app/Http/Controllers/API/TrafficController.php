@@ -11,7 +11,7 @@ use App\Libraries\GlobalData;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-//use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;
 
 use Exception;
 use Exception as BaseException;
@@ -20,7 +20,7 @@ use DateTime;
 
 class TrafficController extends Controller{
     
-    public function save_traffic_location(Request $request){
+    public function save(Request $request){
         
         $json_data = [];
         
@@ -183,7 +183,7 @@ class TrafficController extends Controller{
         return response()->json($json_data);
     }//end save traffic location
     
-    public function read_traffic_locations(Request $request){
+    public function read(Request $request){
         
         $json_data = [];
         
@@ -266,77 +266,82 @@ class TrafficController extends Controller{
         return response()->json($json_data);
     }//end read traffic locations
     
-    public function delete_traffic_location(Request $request){
+    public function delete($location_random_id){
         
         $json_data = [];
         
         if (Auth::check()) {
             
+            $traffic_location_to_delete = null;
             $location_random_id = null;
             $delete_result = null;
-            if($request->location_random_id){
-                $location_random_id = $request->location_random_id;
+            if($location_random_id){
+                $traffic_location_to_delete = Location::where('random_id', $location_random_id)->get()->first();
+                Log::debug('traffic_location_to_delete random_id: '.$traffic_location_to_delete->random_id);
                 $delete_result = Location::where('random_id', $location_random_id)->delete();
             }
             
-            $traffic_locations = Location::where('user_id', Auth::id())->where('component', 'traffic')->orderBy('order', 'asc')->get();
-            
-            $default_location = null;
-            foreach($traffic_locations as $location){
-                if($location->default){
-                    $default_location = $location;
-                    break;
-                }
-            }
-            
-            if(sizeof($traffic_locations) == 1){
-                foreach($traffic_locations as $location){
-                    $location->default = true;
-                    $location->save();
-                    $default_location = $location;
-                }
-            }
-            
+            $traffic_locations = null;
             $traffic_incident_data = null;
             $traffic_api_message = null;
-            if($default_location){
-                
-                $default_location_radius = 1609.34 * $default_location->radius;
-                
-                $trafficAPI = new TrafficAPI;
-                
-                try {
-                    //json decoded already
-                    $traffic_incident_data = $trafficAPI->getTrafficIncidentData($default_location->name, $default_location_radius);
-                    
-                    // Check if the Geocoding API returned an error
-                    if ($traffic_incident_data === false) {
-                        throw new BaseException('Error: API call failed.');
-                    }
-                    
-                    if (!$traffic_incident_data || empty($traffic_incident_data)) {
-                        throw new BaseException('Error: Empty response from API.');
-                    }
-                    
-                    if(isset($traffic_incident_data['error'])){
-                        throw new BaseException('Error: '.$traffic_incident_data['error']);
-                    }
-                    
-                    if($traffic_incident_data['info']['statuscode'] === 400){//OK
-                        throw new BaseException('Error: '.$traffic_incident_data['info']['messages'][0]);
-                    }
-                } catch (Exception $e) {
-                    
-                    // Handle API errors
-                    $traffic_api_message = $e->getMessage();
-                    $traffic_incident_data = null;
-                }
-                
-                $this->convert_formats($traffic_incident_data);
-                
-            }
-           
+            
             if($delete_result > 0){
+                
+                //find new default if default was deleted
+                if($traffic_location_to_delete->default == true){
+                    
+                    $location_name = null;
+                    
+                    $traffic_locations = Location::where('user_id', Auth::id())->where('component', 'traffic')->orderBy('order', 'asc')->get();
+                    
+                    if(sizeof($traffic_locations) > 0){
+                        
+                        $location_name = null;
+                        $location_radius = null;
+                        
+                        foreach($traffic_locations as $location){
+                            $location->default = true;
+                            $location->save();
+                            $location_name = $location->name;
+                            $location_radius = 1609.34 * $location->radius;
+                            break;
+                        }
+                        
+                        if($location_name){
+                            
+                            $trafficAPI = new TrafficAPI;
+                            
+                            try {
+                                //json decoded already
+                                $traffic_incident_data = $trafficAPI->getTrafficIncidentData($location_name, $location_radius);
+                                
+                                // Check if the Geocoding API returned an error
+                                if ($traffic_incident_data === false) {
+                                    throw new BaseException('Error: API call failed.');
+                                }
+                                
+                                if (!$traffic_incident_data || empty($traffic_incident_data)) {
+                                    throw new BaseException('Error: Empty response from API.');
+                                }
+                                
+                                if(isset($traffic_incident_data['error'])){
+                                    throw new BaseException('Error: '.$traffic_incident_data['error']);
+                                }
+                                
+                                if($traffic_incident_data['info']['statuscode'] === 400){//OK
+                                    throw new BaseException('Error: '.$traffic_incident_data['info']['messages'][0]);
+                                }
+                            } catch (Exception $e) {
+                                
+                                // Handle API errors
+                                $traffic_api_message = $e->getMessage();
+                                $traffic_incident_data = null;
+                            }
+                            
+                            $this->convert_formats($traffic_incident_data);
+                        }
+                    }
+                }
                 
                 $json_data = [
                     'status'=>Response::HTTP_OK,
@@ -367,79 +372,62 @@ class TrafficController extends Controller{
         return response()->json($json_data);
     }//end delete traffic location
     
-    public function change_default_traffic_location(Request $request){
+    public function change_default($location_random_id){
         
         $json_data = [];
         
         if (Auth::check()) {
             
-            $default_location_random_id = null;
-            if($request->default_location_random_id){
-                $default_location_random_id = $request->default_location_random_id;
-            }
-            
             $traffic_locations = Location::where('user_id', Auth::id())->where('component', 'traffic')->orderBy('order', 'asc')->get();
             
-            $default_location = null;
-            $change_default_location_result = false;
-            foreach($traffic_locations as $location){
-                if($location->random_id == $default_location_random_id){
-                    $location->default = true;
-                    $location->save();
-                    
-                    $default_location = $location;
-                    $change_default_location_result = true;
-                    break;
-                }
-            }
+            $default_location_name = null;
+            $default_location_radius = null;
+            $traffic_incident_data = null;
+            $traffic_api_message = null;
             
-            if($change_default_location_result){
-                //update all other locations if we updated a new default location
-                foreach($traffic_locations as $location){
-                    if($location->random_id != $default_location_random_id){
-                        $location->default = false;
-                        $location->save();
+            foreach($traffic_locations as $location){
+                if($location->random_id == $location_random_id){
+                    $location->default = true;
+                    $default_location_name = $location->name;
+                    $default_location_radius = 1609.34 * $location->radius;
+                }else{
+                    $location->default = false;
+                }
+                $location->save();
+            }
+
+            if($default_location_name){
+                
+                $trafficAPI = new TrafficAPI;
+                
+                try {
+                    //json decoded already
+                    $traffic_incident_data = $trafficAPI->getTrafficIncidentData($default_location_name, $default_location_radius);
+                    
+                    // Check if the Geocoding API returned an error
+                    if ($traffic_incident_data === false) {
+                        throw new BaseException('Error: API call failed.');
                     }
+                    
+                    if (!$traffic_incident_data || empty($traffic_incident_data)) {
+                        throw new BaseException('Error: Empty response from API.');
+                    }
+                    
+                    if(isset($traffic_incident_data['error'])){
+                        throw new BaseException('Error: '.$traffic_incident_data['error']);
+                    }
+                    
+                    if($traffic_incident_data['info']['statuscode'] === 400){//OK
+                        throw new BaseException('Error: '.$traffic_incident_data['info']['messages'][0]);
+                    }
+                } catch (Exception $e) {
+                    
+                    // Handle API errors
+                    $traffic_api_message = $e->getMessage();
+                    $traffic_incident_data = null;
                 }
                 
-                $traffic_incident_data = null;
-                $traffic_api_message = null;
-                if($default_location){
-                    
-                    $default_location_radius = 1609.34 * $default_location->radius;
-                    
-                    $trafficAPI = new TrafficAPI;
-                    
-                    try {
-                        //json decoded already
-                        $traffic_incident_data = $trafficAPI->getTrafficIncidentData($default_location->name, $default_location_radius);
-                        
-                        // Check if the Geocoding API returned an error
-                        if ($traffic_incident_data === false) {
-                            throw new BaseException('Error: API call failed.');
-                        }
-                        
-                        if (!$traffic_incident_data || empty($traffic_incident_data)) {
-                            throw new BaseException('Error: Empty response from API.');
-                        }
-                        
-                        if(isset($traffic_incident_data['error'])){
-                            throw new BaseException('Error: '.$traffic_incident_data['error']);
-                        }
-                        
-                        if($traffic_incident_data['info']['statuscode'] === 400){//OK
-                            throw new BaseException('Error: '.$traffic_incident_data['info']['messages'][0]);
-                        }
-                    } catch (Exception $e) {
-                        
-                        // Handle API errors
-                        $traffic_api_message = $e->getMessage();
-                        $traffic_incident_data = null;
-                    }
-                    
-                    $this->convert_formats($traffic_incident_data);
-                    
-                }
+                $this->convert_formats($traffic_incident_data);
                 
                 $json_data = [
                     'status'=>Response::HTTP_OK,
@@ -455,7 +443,7 @@ class TrafficController extends Controller{
                     'status_message'=> Response::$statusMessages[Response::HTTP_UNPROCESSABLE_ENTITY],
                     'message' => $traffic_api_message,
                     'locations' => $traffic_locations,
-                    'default_location_random_id' => $default_location_random_id,
+                    'default_location_random_id' => $location_random_id,
                     'traffic_incident_data' => $traffic_incident_data
                 ];
             }

@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
+import AuthUtility from './auth/AuthUtility';
 import LoadingSpinner from './LoadingSpinner';
 
 import axios from 'axios';
@@ -77,45 +78,51 @@ function Contact(){
 				setIsLoading(false);
 					
 			}).catch(function (error) {
-				console.log('[contactSubmit - contact] error: ',error + ' back-end api call error');
+				console.log('[contactSubmit] error: ',error + ' back-end api call error');
 				
 				//user not authenticated on server so remove from local storage
+				AuthUtility.clearAuthData();
+				/*
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_role');
 
-				if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
+				if(!isChecked){
                 	localStorage.removeItem('auth_users_name');
                 	localStorage.removeItem('auth_users_last_name');
                 	localStorage.removeItem('auth_email');
                 	localStorage.removeItem('password');
                 	localStorage.removeItem('remember_me');
 				}
-		
-				navHistory('/contact');
-					
-				//swal("Error",error,"error");
+				*/
 		
 				setIsLoading(false);
+				//swal("Error",error,"error");
+				navHistory('/contact');
+		
 			});
 		}).catch(function (error) {
 			//csrf-cookie is outdated
-			console.log('[contactSubmit - contact] error: ',error + ' csrf-cookie is outdated');
-			
+			console.log('[contactSubmit] error: ',error + ' csrf-cookie is outdated');
+				
 			//user not authenticated on server so remove from local storage
+			AuthUtility.clearAuthData();
+			/*
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_role');
 
-			if(!localStorage.getItem('remember_me') || localStorage.getItem('remember_me') !== 'true'){
-                localStorage.removeItem('auth_users_name');
-                localStorage.removeItem('auth_users_last_name');
+			if(!isChecked){
+            	localStorage.removeItem('auth_users_name');
+            	localStorage.removeItem('auth_users_last_name');
             	localStorage.removeItem('auth_email');
             	localStorage.removeItem('password');
             	localStorage.removeItem('remember_me');
 			}
+			*/
 	                	
-			navHistory('/contact');
-		
 			setIsLoading(false);
+			//swal("Error",error,"error");
+			navHistory('/contact');
+			
 		});
 	}
 
